@@ -22,7 +22,7 @@ local CFG = {
 
    -- GitHub raw URL to your keys.txt (one key per line)
    -- Create a private/public repo, put keys there, paste raw URL
-   KEYS_URL = "https://github.com/randomgyattappers/cth-keys/blob/main/keys.txt",
+   KEYS_URL = "https://raw.githubusercontent.com/randomgyattappers/cth-keys/refs/heads/main/keys.txt?token=GHSAT0AAAAAAD33GDGQVBB2DMD4SEMKZ47W2P5I7NA",
 
    -- Local save file name (so user doesn't re-enter key each session)
    SAVE_FILE = "CTH_Key.txt",
