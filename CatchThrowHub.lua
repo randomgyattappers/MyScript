@@ -363,7 +363,7 @@ local function loadHub()
         LoadingSubtitle = "catchthrowhub.com",
         ShowText = "⚡ CTH",
         Theme = "Default",
-        ToggleUIKeybind = "RightShift",
+        ToggleUIKeybind = Enum.KeyCode.RightShift,
         DisableBuildWarnings = true,
         ConfigurationSaving = {Enabled=true, FolderName="CTH_Hub", FileName="Config"},
         KeySystem = false,
