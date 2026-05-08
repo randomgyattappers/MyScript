@@ -23,7 +23,7 @@ end
 
 local function verifyKeyAPI(key)
     local ok, res = pcall(function()
-        return game:HttpGet(API_URL.."/verify?key="..key)
+        return game:HttpGet(API_URL .. "/verify?key=" .. key)
     end)
     if not ok then return false end
     local parsed = pcall(function()
