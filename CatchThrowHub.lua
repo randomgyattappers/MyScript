@@ -411,7 +411,7 @@ local function buildKeyUI(onSuccess)
    inputLabel.TextColor3          = C.MUTED
    inputLabel.Font                = Enum.Font.GothamBold
    inputLabel.TextSize            = 10
-   inputLabel.LetterSpacing       = 4
+   --inputLabel.LetterSpacing       = 4
    inputLabel.TextXAlignment      = Enum.TextXAlignment.Left
    inputLabel.ZIndex              = 5
    inputLabel.Parent              = body
