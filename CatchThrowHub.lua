@@ -3,7 +3,7 @@ local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local LP = Players.LocalPlayer
 
-local LOOTLABS_URL = "https://links.lootlabs.gg/s?MsVq5uin"
+local LOOTLABS_URL = "https://links.lootlabs.gg/s?QN1KyqUN"
 local LINKVERTISE_URL = "https://linkvertise.com/4521873/6l4it25kaDcy?o=sharing"
 local API_URL = "https://heroic-light-production-0d34.up.railway.app/"
 local SAVE_FILE = "CTH_Key.txt"
