@@ -23,56 +23,51 @@ end
 
 local function verifyKeyAPI(key)
     local url = API_URL .. "/verify?key=" .. key
-    local body = nil
+    local body
 
-    -- 1. syn.request (standard, works on 90% of executors, PC+mobile)
-    if syn and syn.request then
-        local ok, resp = pcall(syn.request, {
+    local requestFunc =
+        (syn and syn.request) or
+        request or
+        http_request or
+        (http and http.request) or
+        (fluxus and fluxus.request)
+
+    if requestFunc then
+        local ok, resp = pcall(requestFunc, {
             Url = url,
             Method = "GET",
-            Headers = {["Cache-Control"] = "no-cache"},
-            Timeout = 8
+            Headers = {
+                ["Cache-Control"] = "no-cache"
+            }
         })
+
         if ok and resp and resp.Body then
             body = resp.Body
-            print("[verify] syn.request OK, len:", #body)
         end
     end
 
-    -- 2. http_request (some execs, less common but still standard)
-    if not body and http_request then
-        local ok, resp = pcall(http_request, {
-            Url = url,
-            Method = "GET",
-            Headers = {["Cache-Control"] = "no-cache"},
-            Timeout = 8
-        })
-        if ok and resp and resp.Body then
-            body = resp.Body
-            print("[verify] http_request OK, len:", #body)
-        end
-    end
-
-    -- 3. Plain game:HttpGet (ONE argument, the universal fallback)
     if not body then
-        local ok, result = pcall(game.HttpGet, game, url)  -- exactly one argument
-        if ok and result then
+        local ok, result = pcall(function()
+            return game:HttpGet(url)
+        end)
+
+        if ok then
             body = result
-            print("[verify] game:HttpGet OK, len:", #body)
-        else
-            print("[verify] game:HttpGet FAILED:", ok, result)
-            return false
         end
     end
 
-    if not body then return false end
-
-    -- parse
-    local ok, data = pcall(game:GetService("HttpService").JSONDecode, game:GetService("HttpService"), body)
-    if ok and data and data.valid then
-        print("[verify] JSON valid")
-        return true
+    if not body then
+        return false
     end
+
+    local HttpService = game:GetService("HttpService")
+
+    local ok, data = pcall(function()
+        return HttpService:JSONDecode(body)
+    end)
+
+    return ok and data and data.valid == true
+end
 
     local strOk = body:find('"valid":true') or body:find('"valid": true')
     print("[verify] string match:", strOk ~= nil)
