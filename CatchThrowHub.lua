@@ -7,7 +7,7 @@ local LP = Players.LocalPlayer
 
 local LOOTLABS_URL = "https://links.lootlabs.gg/s?QN1KyqUN"
 local LINKVERTISE_URL = "Lootlink supported only linkversite is shit"
-local API_URL = "https://YOUR-RAILWAY-APP.railway.app"
+local API_URL = "https://heroic-light-production-0d34.up.railway.app/"
 local SAVE_FILE = "CTH_Key.txt"
 
 local VP = workspace.CurrentCamera.ViewportSize
