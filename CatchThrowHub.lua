@@ -5,7 +5,7 @@ local LP = Players.LocalPlayer
 
 local LOOTLABS_URL = "https://links.lootlabs.gg/s?QN1KyqUN"
 local LINKVERTISE_URL = "https://linkvertise.com/4521873/6l4it25kaDcy?o=sharing"
-local API_URL = "https://heroic-light-production-0d34.up.railway.app"
+local API_URL = "https://heroic-light-production-0d34.up.railway.app/verify"
 local SAVE_FILE = "CTH_Key.txt"
 
 local function tw(inst, props, t, style)
@@ -22,7 +22,7 @@ local function saveKey(k)
 end
 
 local function verifyKeyAPI(key)
-    local url = API_URL .. "/verify?key=" .. key
+    local url = API_URL .. "?key=" .. key
     local body
 
     local requestFunc =
@@ -332,7 +332,7 @@ local function buildUI(onSuccess)
         Color3.fromRGB(50,70,110),
         Enum.Font.Gotham, 11)
 
-    label(panel, "catchthrowhub.com  •  v2.5.0",
+    label(panel, "catchthrowhub.com  •  v2.5.1",
         UDim2.new(1,-32,0,16),
         UDim2.new(0,16,0,362),
         Color3.fromRGB(30,45,80),
@@ -819,7 +819,7 @@ local function loadHub()
     end})
 
     Rayfield:LoadConfiguration()
-    Rayfield:Notify({Title="⚡ CTH Hub v2.5.0 Loaded!",Content="Press L=Lock | Z=Speed | X=JumpBoost | T=Throw",Duration=5,Image="crosshair"})
+    Rayfield:Notify({Title="⚡ CTH Hub v2.5.1 Loaded!",Content="Press L=Lock | Z=Speed | X=JumpBoost | T=Throw",Duration=5,Image="crosshair"})
 end
 
 task.spawn(function()
