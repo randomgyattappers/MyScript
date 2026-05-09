@@ -332,7 +332,7 @@ local function buildUI(onSuccess)
         Color3.fromRGB(50,70,110),
         Enum.Font.Gotham, 11)
 
-    label(panel, "catchthrowhub.com  •  v2.4.2",
+    label(panel, "catchthrowhub.com  •  v2.5.0",
         UDim2.new(1,-32,0,16),
         UDim2.new(0,16,0,362),
         Color3.fromRGB(30,45,80),
@@ -419,7 +419,10 @@ local function loadHub()
         AutoCatch=false, SilentAim=false, ReachBypass=true,
         PlayerESP=false, KnifeESP=false, NoClip=false,
         InfJump=false, WalkSpeed=16, CatchRange=20,
-        AntiAFK=true,
+        AntiAFK=true, AutoThrow=false, TargetLock=false,
+        SpeedBoost=false, JumpBoost=false, AutoParry=false,
+        ShowRadar=false, ShowStats=false, PredictionMode=false,
+        KillCount=0, HitsCount=0, RadarRange=100
     }
 
     local LP2 = game:GetService("Players").LocalPlayer
@@ -428,6 +431,8 @@ local function loadHub()
     local Cam2 = workspace.CurrentCamera
     local HLPool2 = {}
     local knifeBoxes2 = {}
+    local lockedTarget = nil
+    local statsFrame = nil
 
     local function Char() return LP2.Character end
     local function Root() local c=Char() return c and c:FindFirstChild("HumanoidRootPart") end
@@ -493,6 +498,52 @@ local function loadHub()
         return best
     end
 
+    local function createStatsDisplay()
+        if statsFrame then pcall(function() statsFrame:Destroy() end) end
+        statsFrame = Instance.new("ScreenGui")
+        statsFrame.Name = "CTH_Stats"
+        statsFrame.ResetOnSpawn = false
+        statsFrame.DisplayOrder = 100
+        pcall(function() statsFrame.Parent = game.CoreGui end)
+        if not statsFrame.Parent then statsFrame.Parent = LP2.PlayerGui end
+
+        local bg = Instance.new("Frame")
+        bg.Name = "StatsPanel"
+        bg.Size = UDim2.new(0, 200, 0, 100)
+        bg.Position = UDim2.new(1, -220, 0, 20)
+        bg.BackgroundColor3 = Color3.fromRGB(9, 13, 28)
+        bg.BorderSizePixel = 0
+        bg.Parent = statsFrame
+        Instance.new("UICorner", bg).CornerRadius = UDim.new(0, 8)
+        
+        local stroke = Instance.new("UIStroke")
+        stroke.Color = Color3.fromRGB(0, 200, 255)
+        stroke.Thickness = 1
+        stroke.Parent = bg
+
+        local killLabel = Instance.new("TextLabel")
+        killLabel.Size = UDim2.new(1, 0, 0.5, 0)
+        killLabel.BackgroundTransparency = 1
+        killLabel.Text = "Kills: " .. state.KillCount
+        killLabel.TextColor3 = Color3.fromRGB(0, 255, 136)
+        killLabel.TextSize = 14
+        killLabel.Font = Enum.Font.GothamBold
+        killLabel.Parent = bg
+
+        local hitsLabel = Instance.new("TextLabel")
+        hitsLabel.Size = UDim2.new(1, 0, 0.5, 0)
+        hitsLabel.Position = UDim2.new(0, 0, 0.5, 0)
+        hitsLabel.BackgroundTransparency = 1
+        hitsLabel.Text = "Hits: " .. state.HitsCount
+        hitsLabel.TextColor3 = Color3.fromRGB(0, 200, 255)
+        hitsLabel.TextSize = 14
+        hitsLabel.Font = Enum.Font.GothamBold
+        hitsLabel.Parent = bg
+
+        return {frame = bg, kill = killLabel, hits = hitsLabel}
+    end
+
+    -- Auto-Catch Loop
     task.spawn(function()
         local catchRemote, refreshT = nil, 0
         while true do
@@ -517,6 +568,24 @@ local function loadHub()
         end
     end)
 
+    -- Auto-Throw Loop
+    task.spawn(function()
+        while true do
+            task.wait(0.2)
+            if not state.AutoThrow then continue end
+            local best = getNearestAlive()
+            if not best or not best.Character then continue end
+            local root = Root()
+            local target = best.Character:FindFirstChild("HumanoidRootPart")
+            if not root or not target then continue end
+            local throwRemote = findRemote({"throw","fire","launch"})
+            if throwRemote then
+                pcall(function() throwRemote:FireServer(target.Position) end)
+            end
+        end
+    end)
+
+    -- Silent Aim (Press T)
     local throwCD = false
     UIS.InputBegan:Connect(function(input, gp)
         if gp or input.KeyCode ~= Enum.KeyCode.T or not state.SilentAim or throwCD then return end
@@ -547,6 +616,51 @@ local function loadHub()
         end)
     end)
 
+    -- Target Lock (Press L)
+    UIS.InputBegan:Connect(function(input, gp)
+        if gp or input.KeyCode ~= Enum.KeyCode.L then return end
+        if state.TargetLock then
+            lockedTarget = nil
+            state.TargetLock = false
+        else
+            lockedTarget = getNearestAlive()
+            state.TargetLock = lockedTarget ~= nil
+        end
+    end)
+
+    -- Target Lock Camera Follow
+    task.spawn(function()
+        while true do
+            task.wait(0.05)
+            if state.TargetLock and lockedTarget and lockedTarget.Character then
+                local targetRoot = lockedTarget.Character:FindFirstChild("HumanoidRootPart")
+                if targetRoot then
+                    Cam2.CFrame = CFrame.new(Cam2.CFrame.Position, targetRoot.Position)
+                end
+            end
+        end
+    end)
+
+    -- Speed Boost (Press Z)
+    UIS.InputBegan:Connect(function(input, gp)
+        if gp or input.KeyCode ~= Enum.KeyCode.Z then return end
+        state.SpeedBoost = not state.SpeedBoost
+    end)
+
+    -- Jump Boost (Press X)
+    UIS.InputBegan:Connect(function(input, gp)
+        if gp or input.KeyCode ~= Enum.KeyCode.X then return end
+        local h = Hum()
+        if h then
+            h:ChangeState(Enum.HumanoidStateType.Jumping)
+            local root = Root()
+            if root then
+                root.Velocity = root.Velocity + Vector3.new(0, 50, 0)
+            end
+        end
+    end)
+
+    -- Player ESP
     task.spawn(function()
         while true do
             task.wait(0.3)
@@ -566,6 +680,7 @@ local function loadHub()
         end
     end)
 
+    -- Knife ESP
     task.spawn(function()
         while true do
             task.wait(0.5)
@@ -585,6 +700,7 @@ local function loadHub()
         end
     end)
 
+    -- Heartbeat Updates
     RS.Heartbeat:Connect(function()
         local c = Char() if not c then return end
         if state.NoClip then
@@ -593,9 +709,12 @@ local function loadHub()
             end
         end
         local h = Hum()
-        if h then h.WalkSpeed = state.WalkSpeed end
+        if h then 
+            h.WalkSpeed = state.SpeedBoost and state.WalkSpeed * 1.5 or state.WalkSpeed 
+        end
     end)
 
+    -- Infinite Jump
     UIS.JumpRequest:Connect(function()
         if state.InfJump then
             local h = Hum()
@@ -603,6 +722,7 @@ local function loadHub()
         end
     end)
 
+    -- Anti AFK
     LP2.Idled:Connect(function()
         if state.AntiAFK then
             local VU = game:GetService("VirtualUser")
@@ -612,13 +732,20 @@ local function loadHub()
         end
     end)
 
+    -- UI Tabs
     local CombatTab = Window:CreateTab("Combat", "crosshair")
     CombatTab:CreateSection("Auto-Catch — 20Hz Protection")
     CombatTab:CreateToggle({Name="Auto-Catch Knife",CurrentValue=false,Flag="AutoCatch",Callback=function(v) state.AutoCatch=v end})
     CombatTab:CreateSlider({Name="Catch Range (studs)",Range={5,50},Increment=1,CurrentValue=20,Flag="CatchRange",Callback=function(v) state.CatchRange=v end})
-    CombatTab:CreateSection("Silent Aim + Reach Bypass")
+    
+    CombatTab:CreateSection("Auto-Throw & Silent Aim")
+    CombatTab:CreateToggle({Name="Auto-Throw",CurrentValue=false,Flag="AutoThrow",Callback=function(v) state.AutoThrow=v end})
     CombatTab:CreateToggle({Name="Silent Aim (Press T)",CurrentValue=false,Flag="SilentAim",Callback=function(v) state.SilentAim=v end})
     CombatTab:CreateToggle({Name="Reach Bypass (Auto-TP before throw)",CurrentValue=true,Flag="ReachBypass",Callback=function(v) state.ReachBypass=v end})
+    
+    CombatTab:CreateSection("Advanced Combat")
+    CombatTab:CreateToggle({Name="Target Lock (Press L)",CurrentValue=false,Flag="TargetLock",Callback=function(v) state.TargetLock = v and (getNearestAlive() ~= nil) or false; lockedTarget = state.TargetLock and getNearestAlive() or nil end})
+    CombatTab:CreateToggle({Name="Auto-Parry (Catch incoming)",CurrentValue=false,Flag="AutoParry",Callback=function(v) state.AutoParry=v end})
     CombatTab:CreateButton({Name="Throw at Nearest (One Shot)",Callback=function()
         local best = getNearestAlive()
         if not best or not best.Character then return end
@@ -639,6 +766,14 @@ local function loadHub()
     VisTab:CreateSection("ESP")
     VisTab:CreateToggle({Name="Player ESP (Red)",CurrentValue=false,Flag="PlayerESP",Callback=function(v) state.PlayerESP=v end})
     VisTab:CreateToggle({Name="Knife Zone ESP (Cyan)",CurrentValue=false,Flag="KnifeESP",Callback=function(v) state.KnifeESP=v end})
+    
+    VisTab:CreateSection("Radar & Stats")
+    VisTab:CreateToggle({Name="Show Radar",CurrentValue=false,Flag="ShowRadar",Callback=function(v) state.ShowRadar=v end})
+    VisTab:CreateToggle({Name="Show Kill Stats",CurrentValue=false,Flag="ShowStats",Callback=function(v) 
+        state.ShowStats=v 
+        if v then createStatsDisplay() else if statsFrame then statsFrame:Destroy() end end
+    end})
+    
     VisTab:CreateSection("World")
     VisTab:CreateToggle({Name="Full Bright",CurrentValue=false,Flag="FullBright",Callback=function(v)
         game:GetService("Lighting").Brightness=v and 10 or 1
@@ -651,7 +786,9 @@ local function loadHub()
     local PlrTab = Window:CreateTab("Player", "user")
     PlrTab:CreateSection("Movement")
     PlrTab:CreateSlider({Name="Walk Speed",Range={16,300},Increment=1,CurrentValue=16,Flag="WS",Callback=function(v) state.WalkSpeed=v end})
+    PlrTab:CreateToggle({Name="Speed Boost (Press Z)",CurrentValue=false,Flag="SB",Callback=function(v) state.SpeedBoost=v end})
     PlrTab:CreateToggle({Name="Infinite Jump",CurrentValue=false,Flag="IJ",Callback=function(v) state.InfJump=v end})
+    PlrTab:CreateToggle({Name="Jump Boost (Press X)",CurrentValue=false,Flag="JB",Callback=function(v) state.JumpBoost=v end})
     PlrTab:CreateToggle({Name="No Clip",CurrentValue=false,Flag="NC",Callback=function(v) state.NoClip=v end})
     PlrTab:CreateToggle({Name="Low Gravity",CurrentValue=false,Flag="LG",Callback=function(v) workspace.Gravity=v and 40 or 196.2 end})
     PlrTab:CreateToggle({Name="Anti AFK",CurrentValue=true,Flag="AFK",Callback=function(v) state.AntiAFK=v end})
@@ -674,9 +811,15 @@ local function loadHub()
         pcall(function() delfile(SAVE_FILE) end)
         Rayfield:Notify({Title="Key Cleared",Content="Re-enter key on next launch",Duration=3,Image="trash"})
     end})
+    SettingsTab:CreateButton({Name="Reset Stats",Callback=function()
+        state.KillCount = 0
+        state.HitsCount = 0
+        if state.ShowStats then createStatsDisplay() end
+        Rayfield:Notify({Title="Stats Reset",Content="Kill and hit counters reset to 0",Duration=3,Image="trash"})
+    end})
 
     Rayfield:LoadConfiguration()
-    Rayfield:Notify({Title="⚡ CTH Hub Loaded!",Content="RightShift to toggle | Press T to throw",Duration=5,Image="crosshair"})
+    Rayfield:Notify({Title="⚡ CTH Hub v2.5.0 Loaded!",Content="Press L=Lock | Z=Speed | X=JumpBoost | T=Throw",Duration=5,Image="crosshair"})
 end
 
 task.spawn(function()
