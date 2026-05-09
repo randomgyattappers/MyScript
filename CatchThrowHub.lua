@@ -5,7 +5,7 @@ local GuiService = game:GetService("GuiService")
 local RunService = game:GetService("RunService")
 local LP = Players.LocalPlayer
 
-local LOOTLABS_URL = "https://lootlabs.gg/cat/YOURLINK"
+local LOOTLABS_URL = "https://links.lootlabs.gg/s?QN1KyqUN"
 local LINKVERTISE_URL = "Lootlink supported only linkversite is shit"
 local API_URL = "https://YOUR-RAILWAY-APP.railway.app"
 local SAVE_FILE = "CTH_Key.txt"
