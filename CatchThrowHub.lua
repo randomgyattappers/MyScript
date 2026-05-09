@@ -22,15 +22,54 @@ local function saveKey(k)
 end
 
 local function verifyKeyAPI(key)
-    local ok, res = pcall(function()
-        return game:HttpGet(API_URL .. "/verify?key=" .. key)
+    local url = API_URL .. "/verify?key=" .. key
+    local body = nil
+
+    -- 1. Try syn.request (works on Delta, Codex, most mobile executors)
+    if syn and syn.request then
+        local success, response = pcall(function()
+            return syn.request({
+                Url = url,
+                Method = "GET",
+                Headers = {["Cache-Control"] = "no-cache"},
+                Timeout = 3
+            })
+        end)
+        if success and response and response.Body then
+            body = response.Body
+            print("[verify] syn.request success, length:", #body)
+        else
+            print("[verify] syn.request failed:", success, response)
+        end
+    end
+
+    -- 2. Fallback to game:HttpGet
+    if not body then
+        local success, response = pcall(function()
+            return game:HttpGet(url, true)   -- true = bypass cache
+        end)
+        if success and response then
+            body = response
+            print("[verify] game:HttpGet success, length:", #body)
+        else
+            print("[verify] game:HttpGet failed:", success, response)
+            return false
+        end
+    end
+
+    -- 3. Parse: try JSON first, then plain string search
+    local success, parsed = pcall(function()
+        return game:GetService("HttpService"):JSONDecode(body)
     end)
-    if not ok then return false end
-    local parsed = pcall(function()
-        local data = game:GetService("HttpService"):JSONDecode(res)
-        return data.valid == true
-    end)
-    return res:find('"valid":true') ~= nil
+    if success and parsed and parsed.valid == true then
+        print("[verify] JSON parse: valid")
+        return true
+    end
+
+    -- fallback string match
+    local result = body:find('"valid":true') ~= nil
+    print("[verify] string match:", result)
+    return result
 end
 
 local function buildUI(onSuccess)
