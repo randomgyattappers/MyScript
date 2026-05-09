@@ -61,16 +61,15 @@ local function verifyKeyAPI(key)
     end
 
     local HttpService = game:GetService("HttpService")
-
     local ok, data = pcall(function()
         return HttpService:JSONDecode(body)
     end)
 
-    return ok and data and data.valid == true
-end
+    if ok and data and data.valid == true then
+        return true
+    end
 
     local strOk = body:find('"valid":true') or body:find('"valid": true')
-    print("[verify] string match:", strOk ~= nil)
     return strOk ~= nil
 end
 
@@ -333,22 +332,28 @@ local function buildUI(onSuccess)
         Color3.fromRGB(50,70,110),
         Enum.Font.Gotham, 11)
 
-    label(panel, "catchthrowhub.com  •  v2.4.1",
+    label(panel, "catchthrowhub.com  •  v2.4.2",
         UDim2.new(1,-32,0,16),
         UDim2.new(0,16,0,362),
         Color3.fromRGB(30,45,80),
         Enum.Font.Gotham, 10)
 
     llBtn.MouseButton1Click:Connect(function()
-        setclipboard(LOOTLABS_URL)
-        setStatus("Lootlabs URL copied! Paste in browser, complete tasks, get your key.", Color3.fromRGB(0,200,255))
+        if pcall(setclipboard, LOOTLABS_URL) then
+            setStatus("Lootlabs URL copied! Paste in browser, complete tasks, get your key.", Color3.fromRGB(0,200,255))
+        else
+            setStatus("Tap & hold to copy: " .. LOOTLABS_URL, Color3.fromRGB(0,200,255))
+        end
         llBtn.Text = "✓ Copied!"
         task.delay(2, function() if llBtn then llBtn.Text = "🔗  Get Key (Lootlabs)" end end)
     end)
 
     lvBtn.MouseButton1Click:Connect(function()
-        setclipboard(LINKVERTISE_URL)
-        setStatus("Linkvertise URL copied! Paste in browser to get your key.", Color3.fromRGB(0,200,255))
+        if pcall(setclipboard, LINKVERTISE_URL) then
+            setStatus("Linkvertise URL copied! Paste in browser to get your key.", Color3.fromRGB(0,200,255))
+        else
+            setStatus("Tap & hold to copy: " .. LINKVERTISE_URL, Color3.fromRGB(0,200,255))
+        end
         lvBtn.Text = "✓ Copied!"
         task.delay(2, function() if lvBtn then lvBtn.Text = "🔗  Linkvertise" end end)
     end)
@@ -662,7 +667,7 @@ local function loadHub()
         end
         local out = table.concat(lines,"\n")
         pcall(function() writefile("CTH_Remotes.txt",out) end)
-        setclipboard(out)
+        pcall(setclipboard, out)
         Rayfield:Notify({Title="Dumped",Content=#lines.." remotes copied",Duration=3,Image="terminal"})
     end})
     SettingsTab:CreateButton({Name="Clear Saved Key",Callback=function()
